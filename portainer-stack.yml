@@ -1,0 +1,123 @@
+# Portainer Stack Configuration
+# คัดลอกเนื้อหานี้ไปใส่ใน Portainer Web Editor
+
+version: '3.8'
+
+services:
+  # Loki - Log Aggregation System
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: grafana-stack_loki
+    ports:
+      - "3998:3100"
+    volumes:
+      - loki-config:/etc/loki/
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - grafana-stack
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    configs:
+      - source: loki-config
+        target: /etc/loki/local-config.yaml
+
+  # Promtail - Log Collector
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: grafana-stack_promtail
+    volumes:
+      - promtail-config:/etc/promtail/
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - grafana-stack
+    restart: unless-stopped
+    depends_on:
+      - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    configs:
+      - source: promtail-config
+        target: /etc/promtail/config.yml
+
+  # Grafana - Visualization & Dashboard
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana-stack_grafana
+    ports:
+      - "3999:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-datasources:/etc/grafana/provisioning/datasources/
+      - grafana-dashboards:/etc/grafana/provisioning/dashboards/
+      - dashboard-files:/etc/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_LOG_LEVEL=info
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    networks:
+      - grafana-stack
+    restart: unless-stopped
+    depends_on:
+      - loki
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    configs:
+      - source: grafana-datasources
+        target: /etc/grafana/provisioning/datasources/datasources.yml
+      - source: grafana-dashboards
+        target: /etc/grafana/provisioning/dashboards/dashboards.yml
+      - source: logs-dashboard
+        target: /etc/grafana/dashboards/logs-dashboard.json
+
+# Configurations (สำหรับ Portainer)
+# หมายเหตุ: ใน Portainer ต้องสร้าง Configs เหล่านี้แยกก่อน
+configs:
+  loki-config:
+    external: true
+  promtail-config:
+    external: true
+  grafana-datasources:
+    external: true
+  grafana-dashboards:
+    external: true
+  logs-dashboard:
+    external: true
+
+# Networks
+networks:
+  grafana-stack:
+    driver: bridge
+    name: grafana-stack
+
+# Volumes
+volumes:
+  loki-data:
+    driver: local
+  grafana-data:
+    driver: local
+  loki-config:
+    driver: local
+  promtail-config:
+    driver: local
+  grafana-datasources:
+    driver: local
+  grafana-dashboards:
+    driver: local
+  dashboard-files:
+    driver: local
