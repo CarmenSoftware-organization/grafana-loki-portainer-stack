@@ -3,149 +3,52 @@ version: '3.8'
 services:
   # Loki - Log Aggregation System
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:latest
     container_name: loki
     ports:
       - "3998:3100"
     volumes:
-      - ./data/loki:/loki
-    command: >
-      -config.file=/etc/loki/local-config.yaml
-      -auth.enabled=false
-      -server.http-listen-port=3100
-      -server.grpc-listen-port=9096
-      -common.path-prefix=/loki
-      -common.storage.filesystem.chunks-directory=/loki/chunks
-      -common.storage.filesystem.rules-directory=/loki/rules
-      -common.replication-factor=1
-      -common.ring.instance-addr=127.0.0.1
-      -common.ring.kvstore.store=inmemory
-      -schema-config.configs[0].from=2020-10-24
-      -schema-config.configs[0].store=boltdb-shipper
-      -schema-config.configs[0].object-store=filesystem
-      -schema-config.configs[0].schema=v11
-      -schema-config.configs[0].index.prefix=index_
-      -schema-config.configs[0].index.period=24h
-      -limits-config.enforce-metric-name=false
-      -limits-config.reject-old-samples=true
-      -limits-config.reject-old-samples-max-age=168h
-      -limits-config.max-cache-freshness-per-query=10m
-      -limits-config.split-queries-by-interval=15m
-      -chunk-store-config.max-look-back-period=0s
-      -table-manager.retention-deletes-enabled=false
-      -table-manager.retention-period=0s
-      -compactor.working-directory=/loki/boltdb-shipper-compactor
-      -compactor.shared-store=filesystem
-      -ingester.max-chunk-age=1h
-      -ingester.chunk-idle-period=3m
-      -ingester.chunk-block-size=262144
-      -ingester.chunk-retain-period=1m
-      -ingester.max-transfer-retries=0
-      -ingester.wal.enabled=true
-      -ingester.wal.dir=/loki/wal
+      - loki-data:/loki
     networks:
       - grafana-stack
     restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
-  # Promtail - Log Collector
+  # Promtail - Log Collector (Minimal)
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:latest
     container_name: promtail
     volumes:
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: >
-      -server.http-listen-port=9080
-      -server.grpc-listen-port=0
-      -positions.filename=/tmp/positions.yaml
-      -clients[0].url=http://loki:3100/loki/api/v1/push
-      -scrape-configs[0].job-name=system-logs
-      -scrape-configs[0].static-configs[0].targets[0]=localhost
-      -scrape-configs[0].static-configs[0].labels.job=system-logs
-      -scrape-configs[0].static-configs[0].labels.host=docker-host
-      -scrape-configs[0].static-configs[0].labels.__path__=/var/log/*log
-      -scrape-configs[1].job-name=docker-logs
-      -scrape-configs[1].docker-sd-configs[0].host=unix:///var/run/docker.sock
-      -scrape-configs[1].docker-sd-configs[0].refresh-interval=5s
-      -scrape-configs[1].docker-sd-configs[0].filters[0].name=label
-      -scrape-configs[1].docker-sd-configs[0].filters[0].values[0]=logging=promtail
-      -scrape-configs[1].relabel-configs[0].source-labels[0]=__meta_docker_container_name
-      -scrape-configs[1].relabel-configs[0].regex=/(.*)
-      -scrape-configs[1].relabel-configs[0].target-label=container
-      -scrape-configs[1].relabel-configs[1].source-labels[0]=__meta_docker_container_log_stream
-      -scrape-configs[1].relabel-configs[1].target-label=logstream
-      -scrape-configs[1].relabel-configs[2].source-labels[0]=__meta_docker_container_label_logging_jobname
-      -scrape-configs[1].relabel-configs[2].target-label=job
-      -scrape-configs[2].job-name=nginx-logs
-      -scrape-configs[2].static-configs[0].targets[0]=localhost
-      -scrape-configs[2].static-configs[0].labels.job=nginx-logs
-      -scrape-configs[2].static-configs[0].labels.host=docker-host
-      -scrape-configs[2].static-configs[0].labels.__path__=/var/log/nginx/*log
-      -scrape-configs[3].job-name=apache-logs
-      -scrape-configs[3].static-configs[0].targets[0]=localhost
-      -scrape-configs[3].static-configs[0].labels.job=apache-logs
-      -scrape-configs[3].static-configs[0].labels.host=docker-host
-      -scrape-configs[3].static-configs[0].labels.__path__=/var/log/apache2/*log
-      -scrape-configs[4].job-name=journal-logs
-      -scrape-configs[4].journal.max-age=12h
-      -scrape-configs[4].journal.labels.job=systemd-journal
-      -scrape-configs[4].journal.labels.host=docker-host
     networks:
       - grafana-stack
     restart: unless-stopped
     depends_on:
       - loki
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
   # Grafana - Visualization & Dashboard
   grafana:
-    image: grafana/grafana:10.2.0
+    image: grafana/grafana:latest
     container_name: grafana
     ports:
       - "3999:3000"
     volumes:
-      - ./data/grafana:/var/lib/grafana
-      - ./dashboards:/etc/grafana/dashboards
+      - grafana-data:/var/lib/grafana
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin123
       - GF_USERS_ALLOW_SIGN_UP=false
-      - GF_LOG_LEVEL=info
-      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
-      - GF_DATASOURCES_DEFAULT_URL=http://loki:3100
-      - GF_DATASOURCES_DEFAULT_TYPE=loki
-      - GF_DATASOURCES_DEFAULT_ACCESS=proxy
-      - GF_DATASOURCES_DEFAULT_ISDEFAULT=true
-      - GF_DATASOURCES_DEFAULT_JSONDATA_HTTPHEADERNAME1=X-Scope-OrgID
-      - GF_DATASOURCES_DEFAULT_SECUREJSONDATA_HTTPHEADERVALUE1=tenant1
     networks:
       - grafana-stack
     restart: unless-stopped
     depends_on:
       - loki
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
 
 networks:
   grafana-stack:
     driver: bridge
-    name: grafana-stack
 
 volumes:
   loki-data:
-    driver: local
   grafana-data:
-    driver: local
