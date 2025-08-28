@@ -8,9 +8,8 @@ services:
     ports:
       - "3998:3100"
     volumes:
-      - ./data/loki:/loki
+      - loki-data:/loki
     command: >
-      -config.file=/etc/loki/local-config.yaml
       -auth.enabled=false
       -server.http-listen-port=3100
       -server.grpc-listen-port=9096
@@ -114,7 +113,7 @@ services:
     ports:
       - "3999:3000"
     volumes:
-      - ./data/grafana:/var/lib/grafana
+      - grafana-data:/var/lib/grafana
       - ./dashboards:/etc/grafana/dashboards
     environment:
       - GF_SECURITY_ADMIN_USER=admin
