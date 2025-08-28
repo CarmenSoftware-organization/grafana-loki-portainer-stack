@@ -3,26 +3,24 @@ version: '3.8'
 services:
   # Loki - Log Aggregation System
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:latest
     container_name: loki
     ports:
       - "3998:3100"
     volumes:
       - loki-data:/loki
-    command: -auth.enabled=false -server.http-listen-port=3100
     networks:
       - grafana-stack
     restart: unless-stopped
 
   # Promtail - Log Collector (Minimal)
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:latest
     container_name: promtail
     volumes:
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: -server.http-listen-port=9080 -clients[0].url=http://loki:3100/loki/api/v1/push
     networks:
       - grafana-stack
     restart: unless-stopped
@@ -31,7 +29,7 @@ services:
 
   # Grafana - Visualization & Dashboard
   grafana:
-    image: grafana/grafana:10.2.0
+    image: grafana/grafana:latest
     container_name: grafana
     ports:
       - "3999:3000"
