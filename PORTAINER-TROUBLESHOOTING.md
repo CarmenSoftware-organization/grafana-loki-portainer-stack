@@ -13,7 +13,16 @@
 
 **วิธีแก้ไข:**
 
-#### **วิธีที่ 1: ใช้ไฟล์ `docker-compose-simple.yml` (แนะนำ)**
+#### **วิธีที่ 1: ใช้ไฟล์ `docker-compose-minimal.yml` (แนะนำที่สุด)**
+
+ไฟล์นี้ใช้ basic configuration ที่เรียบง่ายที่สุด:
+
+```bash
+# ใช้ไฟล์นี้แทน docker-compose.yml
+docker-compose -f docker-compose-minimal.yml up -d
+```
+
+#### **วิธีที่ 2: ใช้ไฟล์ `docker-compose-simple.yml`**
 
 ไฟล์นี้ใช้ inline configuration แทนการ mount files:
 
@@ -22,7 +31,7 @@
 docker-compose -f docker-compose-simple.yml up -d
 ```
 
-#### **วิธีที่ 2: ใช้ Environment Variables**
+#### **วิธีที่ 3: ใช้ Environment Variables**
 
 แก้ไข docker-compose.yml ให้ใช้ environment variables:
 
@@ -35,7 +44,7 @@ grafana:
     - GF_DATASOURCES_DEFAULT_ISDEFAULT=true
 ```
 
-#### **วิธีที่ 3: ใช้ Named Volumes**
+#### **วิธีที่ 4: ใช้ Named Volumes**
 
 แทนที่ bind mounts ด้วย named volumes:
 
@@ -46,7 +55,16 @@ volumes:
   - promtail-config:/etc/promtail
 ```
 
-### 2. **Permission Denied Errors**
+### 2. **Command Line Error: "invalid command line string"**
+
+**ปัญหา:** Promtail command line flags มี syntax ที่ซับซ้อนเกินไป
+
+**วิธีแก้ไข:**
+- ใช้ไฟล์ `docker-compose-minimal.yml` ที่มี basic configuration
+- ลดความซับซ้อนของ command line flags
+- ใช้ default configuration ของ images
+
+### 3. **Permission Denied Errors**
 
 **ปัญหา:** ไม่สามารถเขียนไฟล์หรือสร้าง directories ได้
 
@@ -58,7 +76,7 @@ sudo chown -R 472:472 data/grafana  # Grafana user
 sudo chown -R 10001:10001 data/loki  # Loki user
 ```
 
-### 3. **Network Connectivity Issues**
+### 4. **Network Connectivity Issues**
 
 **ปัญหา:** Services ไม่สามารถเชื่อมต่อกันได้
 
@@ -69,9 +87,9 @@ sudo chown -R 10001:10001 data/loki  # Loki user
 
 ## 🚀 **วิธี Deploy ที่แนะนำ:**
 
-### **ขั้นตอนที่ 1: ใช้ไฟล์ Simple**
+### **ขั้นตอนที่ 1: ใช้ไฟล์ Minimal (แนะนำที่สุด)**
 
-1. **Copy เนื้อหาจาก `docker-compose-simple.yml`**
+1. **Copy เนื้อหาจาก `docker-compose-minimal.yml`**
 2. **เปิด Portainer → Stacks → Add Stack**
 3. **ใส่ชื่อ: `grafana-stack`**
 4. **Paste เนื้อหาใน Web Editor**
@@ -96,20 +114,15 @@ docker logs grafana-stack_promtail_1
 
 ## 📋 **Configuration ที่ใช้:**
 
-### **Loki Configuration:**
-- ใช้ command line flags แทน config file
-- Storage: filesystem
-- Port: 3100 (internal), 3998 (external)
+### **ไฟล์ `docker-compose-minimal.yml`:**
+- **Loki**: basic configuration, auth disabled
+- **Promtail**: minimal log collection, system logs + Docker logs
+- **Grafana**: basic setup, manual data source configuration
 
-### **Promtail Configuration:**
-- ใช้ command line flags แทน config file
-- Collect logs จาก system, Docker, Nginx, Apache
-- ส่ง logs ไปยัง Loki
-
-### **Grafana Configuration:**
-- Auto-configure Loki data source
-- Port: 3000 (internal), 3999 (external)
-- Admin: admin/admin123
+### **ไฟล์ `docker-compose-simple.yml`:**
+- **Loki**: full configuration via command line flags
+- **Promtail**: advanced log collection with multiple sources
+- **Grafana**: auto-configure Loki data source
 
 ## 🔍 **การ Debug:**
 
@@ -144,6 +157,17 @@ docker volume inspect grafana-stack_loki-data
 docker volume inspect grafana-stack_grafana-data
 ```
 
+## 🔧 **การ Configure Grafana Data Source:**
+
+หลังจาก deploy สำเร็จ:
+
+1. **เข้าสู่ Grafana**: http://localhost:3999 (admin/admin123)
+2. **ไปที่ Configuration → Data Sources**
+3. **Add Data Source**
+4. **เลือก Loki**
+5. **URL**: `http://loki:3100`
+6. **Save & Test**
+
 ## ✅ **การตรวจสอบว่า Deploy สำเร็จ:**
 
 1. **Containers ทำงานปกติ:**
@@ -163,12 +187,20 @@ docker volume inspect grafana-stack_grafana-data
 
 ## 🆘 **หากยังมีปัญหา:**
 
-1. **ใช้ไฟล์ `docker-compose-simple.yml`**
+1. **ใช้ไฟล์ `docker-compose-minimal.yml`** (แนะนำที่สุด)
 2. **ตรวจสอบ Docker และ Portainer versions**
 3. **ตรวจสอบ system resources (CPU, Memory, Disk)**
 4. **Restart Portainer service**
 5. **ตรวจสอบ Docker daemon logs**
 
+## 📁 **ไฟล์ที่แนะนำ:**
+
+| ไฟล์ | ความซับซ้อน | แนะนำสำหรับ |
+|------|------------|------------|
+| `docker-compose-minimal.yml` | ⭐ | **Portainer, การทดสอบ, Production** |
+| `docker-compose-simple.yml` | ⭐⭐ | Development, Advanced users |
+| `docker-compose.yml` | ⭐⭐⭐ | Local development, File-based config |
+
 ---
 
-**หมายเหตุ:** ไฟล์ `docker-compose-simple.yml` ออกแบบมาเพื่อแก้ไขปัญหาการ mount files ใน Portainer โดยเฉพาะ
+**หมายเหตุ:** ไฟล์ `docker-compose-minimal.yml` ออกแบบมาเพื่อแก้ไขปัญหาทั้งหมดใน Portainer โดยเฉพาะ และมีโอกาส deploy สำเร็จสูงสุด

@@ -51,7 +51,7 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # Promtail - Log Collector
+  # Promtail - Log Collector (Simplified)
   promtail:
     image: grafana/promtail:2.9.0
     container_name: promtail
@@ -72,29 +72,9 @@ services:
       -scrape-configs[1].job-name=docker-logs
       -scrape-configs[1].docker-sd-configs[0].host=unix:///var/run/docker.sock
       -scrape-configs[1].docker-sd-configs[0].refresh-interval=5s
-      -scrape-configs[1].docker-sd-configs[0].filters[0].name=label
-      -scrape-configs[1].docker-sd-configs[0].filters[0].values[0]=logging=promtail
       -scrape-configs[1].relabel-configs[0].source-labels[0]=__meta_docker_container_name
       -scrape-configs[1].relabel-configs[0].regex=/(.*)
       -scrape-configs[1].relabel-configs[0].target-label=container
-      -scrape-configs[1].relabel-configs[1].source-labels[0]=__meta_docker_container_log_stream
-      -scrape-configs[1].relabel-configs[1].target-label=logstream
-      -scrape-configs[1].relabel-configs[2].source-labels[0]=__meta_docker_container_label_logging_jobname
-      -scrape-configs[1].relabel-configs[2].target-label=job
-      -scrape-configs[2].job-name=nginx-logs
-      -scrape-configs[2].static-configs[0].targets[0]=localhost
-      -scrape-configs[2].static-configs[0].labels.job=nginx-logs
-      -scrape-configs[2].static-configs[0].labels.host=docker-host
-      -scrape-configs[2].static-configs[0].labels.__path__=/var/log/nginx/*log
-      -scrape-configs[3].job-name=apache-logs
-      -scrape-configs[3].static-configs[0].targets[0]=localhost
-      -scrape-configs[3].static-configs[0].labels.job=apache-logs
-      -scrape-configs[3].static-configs[0].labels.host=docker-host
-      -scrape-configs[3].static-configs[0].labels.__path__=/var/log/apache2/*log
-      -scrape-configs[4].job-name=journal-logs
-      -scrape-configs[4].journal.max-age=12h
-      -scrape-configs[4].journal.labels.job=systemd-journal
-      -scrape-configs[4].journal.labels.host=docker-host
     networks:
       - grafana-stack
     restart: unless-stopped
