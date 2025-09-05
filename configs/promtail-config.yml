@@ -8,6 +8,12 @@ positions:
 clients:
   - url: http://loki:3100/loki/api/v1/push
 
+   # ALSO send errors to Sentry via HTTP DSN
+  - url: http://sentry:9000/api/<project_id>/store/
+    headers:
+      X-Sentry-Auth: "Sentry sentry_version=7, sentry_key=abc1234567890, sentry_secret=Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
+
+
 scrape_configs:
   # System logs
   - job_name: system-logs

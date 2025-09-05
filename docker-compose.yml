@@ -18,14 +18,17 @@ services:
     image: grafana/promtail:latest
     container_name: promtail
     volumes:
+      - ./promtail-config.yml:/etc/promtail/config.yml
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
     networks:
       - grafana-stack
     restart: unless-stopped
     depends_on:
       - loki
+      - sentry
 
   # Grafana - Visualization & Dashboard
   grafana:
@@ -101,7 +104,7 @@ services:
       - redis
       - kafka
     environment:
-      SENTRY_SECRET_KEY: "replace_with_random_secret"
+      SENTRY_SECRET_KEY: "Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -121,7 +124,7 @@ services:
       - sentry
     command: run worker
     environment:
-      SENTRY_SECRET_KEY: "replace_with_random_secret"
+      SENTRY_SECRET_KEY: "Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -139,7 +142,7 @@ services:
       - sentry
     command: run cron
     environment:
-      SENTRY_SECRET_KEY: "replace_with_random_secret"
+      SENTRY_SECRET_KEY: "Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
