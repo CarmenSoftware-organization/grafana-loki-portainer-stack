@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   # Loki - Log Aggregation System
@@ -45,6 +45,111 @@ services:
     depends_on:
       - loki
 
+  # ---------- Sentry Dependencies ----------
+  postgres:
+    image: postgres:14
+    container_name: sentry_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: sentry
+      POSTGRES_PASSWORD: sentry
+      POSTGRES_DB: sentry
+    volumes:
+      - sentry_postgres:/var/lib/postgresql/data
+    networks:
+      - grafana-stack
+
+  redis:
+    image: redis:7
+    container_name: sentry_redis
+    restart: always
+    volumes:
+      - sentry_redis:/data
+    networks:
+      - grafana-stack
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: sentry_zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - grafana-stack
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: sentry_kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - grafana-stack
+
+  # ---------- Sentry Core ----------
+  sentry:
+    image: getsentry/sentry:24.6.1
+    container_name: sentry_web
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+    environment:
+      SENTRY_SECRET_KEY: "replace_with_random_secret"
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: sentry
+      SENTRY_DB_NAME: sentry
+      SENTRY_REDIS_HOST: redis
+      SENTRY_KAFKA_HOSTS: kafka:9092
+    ports:
+      - "3997:9000"
+    networks:
+      - grafana-stack
+
+  worker:
+    image: getsentry/sentry:24.6.1
+    container_name: sentry_worker
+    restart: always
+    depends_on:
+      - sentry
+    command: run worker
+    environment:
+      SENTRY_SECRET_KEY: "replace_with_random_secret"
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: sentry
+      SENTRY_DB_NAME: sentry
+      SENTRY_REDIS_HOST: redis
+      SENTRY_KAFKA_HOSTS: kafka:9092
+    networks:
+      - grafana-stack
+
+  cron:
+    image: getsentry/sentry:24.6.1
+    container_name: sentry_cron
+    restart: always
+    depends_on:
+      - sentry
+    command: run cron
+    environment:
+      SENTRY_SECRET_KEY: "replace_with_random_secret"
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: sentry
+      SENTRY_DB_NAME: sentry
+      SENTRY_REDIS_HOST: redis
+      SENTRY_KAFKA_HOSTS: kafka:9092
+    networks:
+      - grafana-stack
+
+# ---------- Networks & Volumes ----------
 networks:
   grafana-stack:
     driver: bridge
@@ -52,3 +157,5 @@ networks:
 volumes:
   loki-data:
   grafana-data:
+  sentry_postgres:
+  sentry_redis:
