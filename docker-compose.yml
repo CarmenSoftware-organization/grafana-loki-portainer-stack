@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # Loki - Log Aggregation System
   loki:
@@ -18,7 +16,7 @@ services:
     image: grafana/promtail:latest
     container_name: promtail
     volumes:
-      - ./promtail-config.yml:/etc/promtail/config.yml
+      - ./configs/promtail-config.yml:/etc/promtail/config.yml
       - /var/log:/var/log:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -96,7 +94,7 @@ services:
 
   # ---------- Sentry Core ----------
   sentry:
-    image: getsentry/sentry:24.6.1
+    image: getsentry/sentry:latest
     container_name: sentry_web
     restart: always
     depends_on:
@@ -117,7 +115,7 @@ services:
       - grafana-stack
 
   worker:
-    image: getsentry/sentry:24.6.1
+    image: getsentry/sentry:latest
     container_name: sentry_worker
     restart: always
     depends_on:
@@ -135,7 +133,7 @@ services:
       - grafana-stack
 
   cron:
-    image: getsentry/sentry:24.6.1
+    image: getsentry/sentry:latest
     container_name: sentry_cron
     restart: always
     depends_on:
