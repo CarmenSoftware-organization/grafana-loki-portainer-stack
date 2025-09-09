@@ -1,5 +1,7 @@
 # Data directories - exclude persistent data from version control
 data
+data/*
+grafa.db
 
 # Environment files - keep template but exclude actual config
 .env
