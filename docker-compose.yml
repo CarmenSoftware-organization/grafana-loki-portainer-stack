@@ -7,7 +7,7 @@ services:
       - "${LOKI_PORT:-3998}:3100"
     volumes:
       - loki-data:/loki
-      - ${LOKI_DATA_PATH}:/loki
+      - ${LOKI_DATA_PATH:-./data/loki}:/loki
     networks:
       - default
     restart: unless-stopped
@@ -33,14 +33,15 @@ services:
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    user: "472:472"
     ports:
       - "${GRAFANA_PORT:-3999}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
-      - ${GRAFANA_DATA_PATH}:/var/lib/grafana
+      - ${GRAFANA_DATA_PATH:-./data/grafana}:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
       - GF_USERS_ALLOW_SIGN_UP=false
     networks:
       - default
@@ -104,7 +105,7 @@ services:
       - redis
       - kafka
     environment:
-      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY}"
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -124,7 +125,7 @@ services:
       - sentry
     command: run worker
     environment:
-      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY}"
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -142,7 +143,7 @@ services:
       - sentry
     command: run cron
     environment:
-      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY}"
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
