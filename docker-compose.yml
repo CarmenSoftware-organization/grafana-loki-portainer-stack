@@ -4,7 +4,7 @@ services:
     image: grafana/loki:latest
     container_name: loki
     ports:
-      - "${LOKI_PORT}:3100"
+      - "${LOKI_PORT:-3998}:3100"
     volumes:
       - loki-data:/loki
       - ${LOKI_DATA_PATH}:/loki
@@ -34,7 +34,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "${GRAFANA_PORT}:3000"
+      - "${GRAFANA_PORT:-3999}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ${GRAFANA_DATA_PATH}:/var/lib/grafana
@@ -112,7 +112,7 @@ services:
       SENTRY_REDIS_HOST: redis
       SENTRY_KAFKA_HOSTS: kafka:9092
     ports:
-      - "${SENTRY_PORT}:9000"
+      - "${SENTRY_PORT:-3997}:9000"
     networks:
       - default
 
@@ -156,7 +156,7 @@ services:
 networks:
   default:
     driver: bridge
-    name: ${NETWORK_NAME}
+    name: ${NETWORK_NAME:-grafana-stack}
 
 volumes:
   loki-data:
