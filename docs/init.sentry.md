@@ -1,6 +1,3 @@
 docker-compose exec sentry sentry upgrade --noinput 
 
-docker-compose exec sentry sentry createuser --email admin@localhost --password admin123 --superuser --no-input
-
-user : admin@localhost
-pass : admin123
+docker-compose exec sentry sentry createuser --email carmensoftware.dev@gmail.com --password Carmen@2024 --superuser --no-input
