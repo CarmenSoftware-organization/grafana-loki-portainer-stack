@@ -9,7 +9,7 @@ services:
       - loki-data:/loki
       - ${LOKI_DATA_PATH}:/loki
     networks:
-      - ${NETWORK_NAME}
+      - default
     restart: unless-stopped
 
   # Promtail - Log Collector (Minimal)
@@ -23,7 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     # command: -config.file=/etc/promtail/config.yml
     networks:
-      - ${NETWORK_NAME}
+      - default
     restart: unless-stopped
     depends_on:
       - loki
@@ -43,7 +43,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
     networks:
-      - ${NETWORK_NAME}
+      - default
     restart: unless-stopped
     depends_on:
       - loki
@@ -60,7 +60,7 @@ services:
     volumes:
       - sentry_postgres:/var/lib/postgresql/data
     networks:
-      - ${NETWORK_NAME}
+      - default
 
   redis:
     image: redis:7
@@ -69,7 +69,7 @@ services:
     volumes:
       - sentry_redis:/data
     networks:
-      - ${NETWORK_NAME}
+      - default
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -78,7 +78,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     networks:
-      - ${NETWORK_NAME}
+      - default
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -92,7 +92,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
-      - ${NETWORK_NAME}
+      - default
 
   # ---------- Sentry Core ----------
   sentry:
@@ -114,7 +114,7 @@ services:
     ports:
       - "${SENTRY_PORT}:9000"
     networks:
-      - ${NETWORK_NAME}
+      - default
 
   worker:
     image: getsentry/sentry:latest
@@ -132,7 +132,7 @@ services:
       SENTRY_REDIS_HOST: redis
       SENTRY_KAFKA_HOSTS: kafka:9092
     networks:
-      - ${NETWORK_NAME}
+      - default
 
   cron:
     image: getsentry/sentry:latest
@@ -150,12 +150,13 @@ services:
       SENTRY_REDIS_HOST: redis
       SENTRY_KAFKA_HOSTS: kafka:9092
     networks:
-      - ${NETWORK_NAME}
+      - default
 
 # ---------- Networks & Volumes ----------
 networks:
-  ${NETWORK_NAME}:
+  default:
     driver: bridge
+    name: ${NETWORK_NAME}
 
 volumes:
   loki-data:
