@@ -4,11 +4,12 @@ services:
     image: grafana/loki:latest
     container_name: loki
     ports:
-      - "3998:3100"
+      - "${LOKI_PORT}:3100"
     volumes:
       - loki-data:/loki
+      - ${LOKI_DATA_PATH}:/loki
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
     restart: unless-stopped
 
   # Promtail - Log Collector (Minimal)
@@ -22,7 +23,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     # command: -config.file=/etc/promtail/config.yml
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
     restart: unless-stopped
     depends_on:
       - loki
@@ -33,15 +34,16 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     ports:
-      - "3999:3000"
+      - "${GRAFANA_PORT}:3000"
     volumes:
       - grafana-data:/var/lib/grafana
+      - ${GRAFANA_DATA_PATH}:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
     restart: unless-stopped
     depends_on:
       - loki
@@ -58,7 +60,7 @@ services:
     volumes:
       - sentry_postgres:/var/lib/postgresql/data
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
   redis:
     image: redis:7
@@ -67,7 +69,7 @@ services:
     volumes:
       - sentry_redis:/data
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
@@ -76,7 +78,7 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
   kafka:
     image: confluentinc/cp-kafka:7.6.0
@@ -90,7 +92,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
   # ---------- Sentry Core ----------
   sentry:
@@ -102,7 +104,7 @@ services:
       - redis
       - kafka
     environment:
-      SENTRY_SECRET_KEY: "Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY}"
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -110,9 +112,9 @@ services:
       SENTRY_REDIS_HOST: redis
       SENTRY_KAFKA_HOSTS: kafka:9092
     ports:
-      - "3997:9000"
+      - "${SENTRY_PORT}:9000"
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
   worker:
     image: getsentry/sentry:latest
@@ -122,7 +124,7 @@ services:
       - sentry
     command: run worker
     environment:
-      SENTRY_SECRET_KEY: "Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY}"
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -130,7 +132,7 @@ services:
       SENTRY_REDIS_HOST: redis
       SENTRY_KAFKA_HOSTS: kafka:9092
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
   cron:
     image: getsentry/sentry:latest
@@ -140,7 +142,7 @@ services:
       - sentry
     command: run cron
     environment:
-      SENTRY_SECRET_KEY: "Xd6uDhJVi5OpXlC3dnWxZWg3bJIThwNqYausGqlIyPY="
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY}"
       SENTRY_POSTGRES_HOST: postgres
       SENTRY_DB_USER: sentry
       SENTRY_DB_PASSWORD: sentry
@@ -148,11 +150,11 @@ services:
       SENTRY_REDIS_HOST: redis
       SENTRY_KAFKA_HOSTS: kafka:9092
     networks:
-      - grafana-stack
+      - ${NETWORK_NAME}
 
 # ---------- Networks & Volumes ----------
 networks:
-  grafana-stack:
+  ${NETWORK_NAME}:
     driver: bridge
 
 volumes:
