@@ -51,7 +51,7 @@ services:
 
   # ---------- Sentry Dependencies ----------
   postgres:
-    image: postgres:14
+    image: postgres:latest
     container_name: sentry_postgres
     restart: always
     environment:
@@ -64,7 +64,7 @@ services:
       - default
 
   redis:
-    image: redis:7
+    image: redis:latest
     container_name: sentry_redis
     restart: always
     volumes:
@@ -73,7 +73,7 @@ services:
       - default
 
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
+    image: confluentinc/cp-zookeeper:latest
     container_name: sentry_zookeeper
     restart: always
     environment:
@@ -82,7 +82,7 @@ services:
       - default
 
   kafka:
-    image: confluentinc/cp-kafka:7.6.0
+    image: confluentinc/cp-kafka:latest
     container_name: sentry_kafka
     restart: always
     depends_on:
