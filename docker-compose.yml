@@ -47,10 +47,19 @@ services:
       - loki
 
   # ---------- Sentry Dependencies ----------
+  redis:
+    image: redis:alpine
+    container_name: sentry_redis
+    restart: unless-stopped
+    volumes:
+      - sentry_redis:/data
+    networks:
+      - default
+
   postgres:
     image: postgres:14
     container_name: sentry_postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: sentry
       POSTGRES_PASSWORD: sentry
@@ -60,47 +69,14 @@ services:
     networks:
       - default
 
-  redis:
-    image: redis:7
-    container_name: sentry_redis
-    restart: always
-    volumes:
-      - sentry_redis:/data
-    networks:
-      - default
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.6.0
-    container_name: sentry_zookeeper
-    restart: always
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-    networks:
-      - default
-
-  kafka:
-    image: confluentinc/cp-kafka:7.6.0
-    container_name: sentry_kafka
-    restart: always
-    depends_on:
-      - zookeeper
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    networks:
-      - default
-
   # ---------- Sentry Core ----------
   sentry:
     image: getsentry/sentry:latest
     container_name: sentry_web
-    restart: always
+    restart: unless-stopped
     depends_on:
       - postgres
       - redis
-      - kafka
     environment:
       SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
       SENTRY_POSTGRES_HOST: postgres
@@ -108,36 +84,21 @@ services:
       SENTRY_DB_PASSWORD: sentry
       SENTRY_DB_NAME: sentry
       SENTRY_REDIS_HOST: redis
-      SENTRY_KAFKA_HOSTS: kafka:9092
+      SENTRY_REDIS_PORT: 6379
     ports:
       - "${SENTRY_PORT:-3997}:9000"
-    networks:
-      - default
-
-  worker:
-    image: getsentry/sentry:latest
-    container_name: sentry_worker
-    restart: always
-    depends_on:
-      - sentry
-    command: run worker
-    environment:
-      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
-      SENTRY_POSTGRES_HOST: postgres
-      SENTRY_DB_USER: sentry
-      SENTRY_DB_PASSWORD: sentry
-      SENTRY_DB_NAME: sentry
-      SENTRY_REDIS_HOST: redis
-      SENTRY_KAFKA_HOSTS: kafka:9092
+    volumes:
+      - sentry_data:/var/lib/sentry/files
     networks:
       - default
 
   cron:
     image: getsentry/sentry:latest
     container_name: sentry_cron
-    restart: always
+    restart: unless-stopped
     depends_on:
-      - sentry
+      - redis
+      - postgres
     command: run cron
     environment:
       SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
@@ -146,9 +107,33 @@ services:
       SENTRY_DB_PASSWORD: sentry
       SENTRY_DB_NAME: sentry
       SENTRY_REDIS_HOST: redis
-      SENTRY_KAFKA_HOSTS: kafka:9092
+      SENTRY_REDIS_PORT: 6379
+    volumes:
+      - sentry_data:/var/lib/sentry/files
     networks:
       - default
+
+  worker:
+    image: getsentry/sentry:latest
+    container_name: sentry_worker
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - postgres
+    command: run worker
+    environment:
+      SENTRY_SECRET_KEY: "${SENTRY_SECRET_KEY:-ac1cd0f73997c89d45917853f4a7fed43c0d7c4f2b795ec89225dc8eb7c1b5b6}"
+      SENTRY_POSTGRES_HOST: postgres
+      SENTRY_DB_USER: sentry
+      SENTRY_DB_PASSWORD: sentry
+      SENTRY_DB_NAME: sentry
+      SENTRY_REDIS_HOST: redis
+      SENTRY_REDIS_PORT: 6379
+    volumes:
+      - sentry_data:/var/lib/sentry/files
+    networks:
+      - default
+
 
 # ---------- Networks & Volumes ----------
 networks:
@@ -161,3 +146,4 @@ volumes:
   grafana-data:
   sentry_postgres:
   sentry_redis:
+  sentry_data:
