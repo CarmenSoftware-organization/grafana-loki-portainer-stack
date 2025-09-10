@@ -8,7 +8,6 @@ This is a Docker-based observability stack combining:
 - **Grafana**: Visualization and dashboards (port 3999)
 - **Loki**: Log aggregation system (port 3998) 
 - **Promtail**: Log collector for system and Docker logs
-- **Sentry**: Error tracking and monitoring (port 3997) with full ecosystem (PostgreSQL, Redis, Kafka, Zookeeper)
 
 The stack uses environment variable-based configuration with two identical deployment options: `docker-compose.yml` for local development and `portainer-stack.yml` for Portainer deployment.
 
@@ -28,7 +27,7 @@ docker-compose logs
 # View logs for specific service
 docker-compose logs grafana
 docker-compose logs loki
-docker-compose logs sentry
+docker-compose logs promtail
 
 # Check service status
 docker-compose ps
@@ -53,16 +52,13 @@ tar -czf loki-backup-$(date +%Y%m%d).tar.gz data/loki/
 Configuration is managed via `.env` file (use `env.example` as template):
 - **GRAFANA_PORT**: Default 3999
 - **LOKI_PORT**: Default 3998  
-- **SENTRY_PORT**: Default 3997
 - **GRAFANA_ADMIN_USER/PASSWORD**: Admin credentials
-- **SENTRY_SECRET_KEY**: Required for Sentry operation
 - **NETWORK_NAME**: Docker network name (default: grafana-stack)
 - **DATA_PATHS**: Local data persistence paths
 
 ### Service Access
 - Grafana: http://localhost:3999 (admin/admin123)
 - Loki API: http://localhost:3998
-- Sentry: http://localhost:3997
 
 ### Configuration Files
 - `configs/loki-config.yml`: Loki storage and retention settings
@@ -81,12 +77,11 @@ The repository maintains identical configurations in:
 Both files must be kept in sync when making changes.
 
 ### Network Architecture
-All services run on a single Docker bridge network (`grafana-stack` by default) for internal communication. Only Grafana, Loki, and Sentry expose external ports.
+All services run on a single Docker bridge network (`grafana-stack` by default) for internal communication. Only Grafana and Loki expose external ports.
 
 ### Data Persistence
 - Grafana data: `./data/grafana` → `/var/lib/grafana`
 - Loki data: `./data/loki` → `/loki`
-- Sentry ecosystem uses named volumes for PostgreSQL and Redis
 
 ### Promtail Configuration
 Currently uses minimal configuration with custom config file commented out. Collects:
