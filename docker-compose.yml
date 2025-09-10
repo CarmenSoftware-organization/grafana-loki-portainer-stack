@@ -71,7 +71,7 @@ services:
 
   # ---------- Sentry Core ----------
   sentry:
-    image: getsentry/sentry:latest
+    image: sentry:latest
     container_name: sentry_web
     restart: unless-stopped
     depends_on:
@@ -93,7 +93,7 @@ services:
       - default
 
   cron:
-    image: getsentry/sentry:latest
+    image: sentry:latest
     container_name: sentry_cron
     restart: unless-stopped
     depends_on:
