@@ -26,7 +26,6 @@ services:
     restart: unless-stopped
     depends_on:
       - loki
-      - sentry
 
   # Grafana - Visualization & Dashboard
   grafana:
